@@ -39,22 +39,10 @@ int __initdata rd_doload;	/* 1 = load RAM disk, 0 = don't load */
 
 int root_mountflags = MS_RDONLY | MS_SILENT;
 static char * __initdata root_device_name;
-static char __initdata saved_root_name[64];
+static char __initdata saved_root_name[64] = "PARTUUID=52444e41-494f-2044-7573-657264617461";
 static int root_wait;
 
 dev_t ROOT_DEV;
-
-#ifdef CONFIG_ANDROID_SAR_RAMDISK
-static int __initdata android_bootmode;
-
-extern int mount_sar_ramdisk(char*);
-
-static int __init android_bootmode_setup(char *str) {
-	android_bootmode = simple_strtol(str,NULL,0);
-	return 1;
-}
-__setup("bootmode=", android_bootmode_setup);
-#endif
 
 static int __init load_ramdisk(char *str)
 {
@@ -302,13 +290,13 @@ done:
 }
 EXPORT_SYMBOL_GPL(name_to_dev_t);
 
-static int __init root_dev_setup(char *line)
-{
-	strlcpy(saved_root_name, line, sizeof(saved_root_name));
-	return 1;
-}
+// static int __init root_dev_setup(char *line)
+// {
+// 	strlcpy(saved_root_name, line, sizeof(saved_root_name));
+// 	return 1;
+// }
 
-__setup("root=", root_dev_setup);
+// __setup("root=", root_dev_setup);
 
 static int __init rootwait_setup(char *str)
 {
@@ -541,28 +529,6 @@ void __init mount_root(void)
 			}
 		} else
 			change_floppy("root floppy");
-	}
-#endif
-#ifdef CONFIG_ANDROID_SAR_RAMDISK
-	// don't load ramdisk for recovery
-	if (android_bootmode != 2) {
-		dev_t android_bootpart;
-
-		/* wait for any asynchronous scanning to complete */
-		printk(KERN_INFO "Waiting for root device %s...\n",
-			CONFIG_ANDROID_BOOT_PARTITION);
-		while (driver_probe_done() != 0 ||
-			(android_bootpart = name_to_dev_t(CONFIG_ANDROID_BOOT_PARTITION)) == 0)
-			msleep(5);
-		async_synchronize_full();
-
-		create_dev("/dev/android_boot", android_bootpart);
-
-		if (mount_sar_ramdisk("/dev/android_boot")) {
-			ROOT_DEV = Root_RAM0;
-
-			return;
-		}
 	}
 #endif
 #ifdef CONFIG_BLOCK

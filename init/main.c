@@ -1248,7 +1248,17 @@ void __init load_default_modules(void)
 
 static int run_init_process(const char *init_filename)
 {
+	const char *const *p;
+
 	argv_init[0] = init_filename;
+	pr_info("Run %s as init process\n", init_filename);
+	pr_debug("  with arguments:\n");
+	for (p = argv_init; *p; p++)
+		pr_debug("    %s\n", *p);
+	pr_debug("  with environment:\n");
+	for (p = envp_init; *p; p++)
+		pr_debug("    %s\n", *p);
+
 	return do_execve(getname_kernel(init_filename),
 		(const char __user *const __user *)argv_init,
 		(const char __user *const __user *)envp_init);
@@ -1310,7 +1320,7 @@ extern void gpio_dvs_check_initgpio(void);
 
 static int __ref kernel_init(void *unused)
 {
-	int ret;
+//	int ret;
 
 	kernel_init_freeable();
 #ifdef CONFIG_SEC_GPIO_DVS
@@ -1334,35 +1344,36 @@ static int __ref kernel_init(void *unused)
 
 	rcu_end_inkernel_boot();
 
-	if (ramdisk_execute_command) {
-		ret = run_init_process(ramdisk_execute_command);
-		if (!ret) {
-#ifdef CONFIG_DEFERRED_INITCALLS
-			schedule_work(&deferred_initcall_work);
-#endif
-			return 0;
-		}
-		pr_err("Failed to execute %s (error %d)\n",
-		       ramdisk_execute_command, ret);
-	}
+// 	if (ramdisk_execute_command) {
+// 		ret = run_init_process(ramdisk_execute_command);
+// 		if (!ret) {
+// #ifdef CONFIG_DEFERRED_INITCALLS
+// 			schedule_work(&deferred_initcall_work);
+// #endif
+// 			return 0;
+// 		}
+// 		pr_err("Failed to execute %s (error %d)\n",
+// 		       ramdisk_execute_command, ret);
+// 	}
 
-	/*
-	 * We try each of these until one succeeds.
-	 *
-	 * The Bourne shell can be used instead of init if we are
-	 * trying to recover a really broken machine.
-	 */
-	if (execute_command) {
-		ret = run_init_process(execute_command);
-		if (!ret) {
-#ifdef CONFIG_DEFERRED_INITCALLS
-			schedule_work(&deferred_initcall_work);
-#endif
-			return 0;
-		}
-		panic("Requested init %s failed (error %d).",
-		      execute_command, ret);
-	}
+// 	/*
+// 	 * We try each of these until one succeeds.
+// 	 *
+// 	 * The Bourne shell can be used instead of init if we are
+// 	 * trying to recover a really broken machine.
+// 	 */
+// 	if (execute_command) {
+// 		ret = run_init_process(execute_command);
+// 		if (!ret) {
+// #ifdef CONFIG_DEFERRED_INITCALLS
+// 			schedule_work(&deferred_initcall_work);
+// #endif
+// 			return 0;
+// 		}
+// 		panic("Requested init %s failed (error %d).",
+// 		      execute_command, ret);
+// 	}
+
 	if (!try_to_run_init_process("/sbin/init") ||
 	    !try_to_run_init_process("/etc/init") ||
 	    !try_to_run_init_process("/bin/init") ||
@@ -1420,7 +1431,7 @@ static noinline void __init kernel_init_freeable(void)
 	 */
 
 	if (!ramdisk_execute_command)
-		ramdisk_execute_command = "/init";
+		ramdisk_execute_command = "/sbin/init";
 
 	if (sys_access((const char __user *) ramdisk_execute_command, 0) != 0) {
 		ramdisk_execute_command = NULL;
